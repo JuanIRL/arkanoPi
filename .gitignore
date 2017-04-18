@@ -1,0 +1,6 @@
+#Directorios con los ejecutables y archivos objeto#
+###############
+Debug
+#Archivos del sistema#
+#############
+.DS_Store
