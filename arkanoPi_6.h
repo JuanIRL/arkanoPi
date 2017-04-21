@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <wiringPi.h>
+#include <wiringPiSPI.h>
 
 #include "kbhit.h" // para poder detectar teclas pulsadas sin bloqueo y leer las teclas pulsadas
 #include "fsm.h"
@@ -60,6 +61,12 @@ static int timer_display_start(int ms);
 static void timer_display_isr (union sigval arg);
 static int timer_pelota_start(int ms);
 static void timer_pelota_isr (union sigval arg);
+static int timer_raqueta_start(int ms);
+static void timer_raqueta_isr (union sigval arg);
+//------------------------------------------------------
+// FUNCIONES DE LECTURA/ESCRITURA EN PERIFERICOS SPI
+//------------------------------------------------------
+float lectura_ADC(void);
 //------------------------------------------------------
 // FUNCIONES DE ENTRADA O DE TRANSICION DE LA MAQUINA DE ESTADOS
 //------------------------------------------------------
@@ -81,6 +88,8 @@ void MueveRaquetaDerecha (fsm_t* fsm);
 void MovimientoPelota (fsm_t* fsm);
 void FinalJuego (fsm_t* fsm);
 void ReseteaJuego (fsm_t* fsm);
+
+void MueveRaqueta(int posicion);
 
 //------------------------------------------------------
 // FUNCIONES DE INICIALIZACION

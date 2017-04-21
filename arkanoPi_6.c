@@ -2,7 +2,7 @@
   * Description        : Main program body
   */
 /* Includes ------------------------------------------------------------------*/
-#include "arkanoPi_5.h"
+#include "arkanoPi_6.h"
 
 /* Private variables ---------------------------------------------------------*/
 static volatile tipo_juego juego;
@@ -11,6 +11,7 @@ volatile int flags = 0;
 
 timer_t timerDisplay;
 timer_t timerPelota;
+timer_t timerRaqueta;
 
 tipo_pantalla pantalla_inicial = {
 		{
@@ -77,6 +78,9 @@ int debounceTime = 0;
 //Pines de las interrupciones
 #define GPIO_PALA_DERECHA 20
 #define GPIO_PALA_IZQUIERDA 21
+//Constantes configuracion SPI
+#define SPI_ADC_CH 0
+#define SPI_ADC_FREQ 1000000
 
 //Primera columna a encender
 int columna = 0;
@@ -338,6 +342,7 @@ void InicializaJuego (fsm_t* fsm) {
 	InicializaArkanoPi((tipo_arkanoPi *) &juego.arkanoPi);
 	PintaPantallaPorTerminal((tipo_pantalla *)&juego.arkanoPi.pantalla);
 	timer_pelota_start(500);
+	timer_raqueta_start(100);
 	juego.estado = WAIT_PUSH;
 
 }
@@ -383,6 +388,20 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
 		ActualizaPantalla((tipo_arkanoPi*)&juego.arkanoPi);
 		piUnlock(JUEGO_KEY);
 		PintaPantallaPorTerminal((tipo_pantalla *)&juego.arkanoPi.pantalla);
+
+}
+/**
+ * @brief	Funcion encargada de mover la raqueta a una posicion determinada. Sera llamada por
+ * 			la rutina que controla el Joystick.
+ */
+void MueveRaqueta(int posicion){
+	int ancho=juego.arkanoPi.raqueta.ancho;
+	if(posicion + (ancho-1) <= 0 || posicion > MATRIZ_ANCHO-1){
+		printf("Posicion de raquera erronea");
+		return;
+	}
+	juego.arkanoPi.raqueta.x = posicion;
+	ActualizaPantalla((tipo_arkanoPi*)&juego.arkanoPi);
 
 }
 
@@ -537,6 +556,12 @@ int systemSetup (void) {
 			piUnlock (STD_IO_BUFFER_KEY);
 			return -1;
 	    }
+		//sets up wiringPiSPI protocol
+		if (wiringPiSPISetup (SPI_ADC_CH, SPI_ADC_FREQ) < 0) { //Conexion del canal 0(GPIO 08 en numeracion BCM) a 1 MHz
+			 printf ("No se pudo inicializar el dispositivo SPI (CH 0)") ;
+			 exit (1);
+			 return -2;
+		}
 		//Configuracion pines GPIO entrada
 		pinMode(GPIO_PALA_DERECHA,INPUT);
 		pinMode(GPIO_PALA_IZQUIERDA,INPUT);
@@ -700,7 +725,71 @@ static int timer_pelota_start(int ms){
 
 	return result;
 }
+/**
+ * @brief			Rutina de atencion a la interrupcion periodica que comprueba la tension en el ADC para
+ * 					mover la raqueta
+ * Para cada columna comprueba que filas deben estar encendidas y ejecuta las subrutinas adecuadas.
+ */
+static void timer_raqueta_isr (union sigval arg) {
 
+	float voltaje = lecturaADC();
+	float max = 1.3;
+	float intervalo = max/10;
+
+	int posicion = (int) voltaje/intervalo;
+	MueveRaqueta(posicion);
+}
+/**
+ * @brief			Inicializa el temporizador asociado a la interrupcion periodica de la raqueta
+ * @param	ms		Intervalo de tiempo entre interrupciones
+ */
+static int timer_raqueta_start(int ms){
+
+	int result = 2;
+
+	struct itimerspec spec;
+	struct sigevent se;
+
+	se.sigev_notify = SIGEV_THREAD;
+	se.sigev_value.sival_ptr = &timerRaqueta;
+	se.sigev_notify_function = timer_raqueta_isr;
+	se.sigev_notify_attributes = NULL;
+
+	spec.it_value.tv_sec = ms / 1000;
+	spec.it_value.tv_nsec = (ms % 1000) * 1000000;
+	spec.it_interval.tv_sec = ms / 1000;
+	spec.it_interval.tv_nsec = (ms % 1000) * 1000000;
+
+	result = timer_create (CLOCK_REALTIME, &se, &timerRaqueta); /* o CLOCK_MONOTONIC si se soporta */
+	printf("result after create = %d\n", result);
+	fflush(stdout);
+	result = timer_settime (timerRaqueta, 0, &spec, NULL);
+	printf("result after settime = %d\n", result);
+	fflush(stdout);
+
+	return result;
+}
+/**
+ * @brief			Realiza la lectura del ADC en la entrenadora mediante el protocolo SPI
+ */
+float lectura_ADC(void){
+	unsigned char ByteSPI[3]; //Buffer lectura escritura SPI
+	int resultado_SPI = 0; //Control operacion SPI
+	float voltaje_medido = 0.0; //Valor medido. A calcular a partir del buffer
+
+	ByteSPI[0] = 0b10011111; // Configuracion ADC (10011111 unipolar, 0-2.5v,canal 0, salida 1), bipolar 0b10010111
+	ByteSPI[1] = 0b0;
+	ByteSPI[2] = 0b0;
+
+	resultado_SPI = wiringPiSPIDataRW (SPI_ADC_CH, ByteSPI, 3);//Enviamos y leemos tres bytes (8+12+4 bits)
+	usleep(20);
+
+	int salida_SPI = ((ByteSPI[1] << 5) | (ByteSPI[2] >> 3)) & 0xFFF;
+
+	/*Caso unipolar */
+	voltaje_medido = 2*2.50 * (((float) salida_SPI)/4095.0);
+	return voltaje_medido;
+}
 /**
  * @brief			Crea thread adicional para la lectura del teclado
  */
