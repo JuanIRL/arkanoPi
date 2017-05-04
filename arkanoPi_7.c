@@ -2,7 +2,7 @@
   * Description        : Main program body
   */
 /* Includes ------------------------------------------------------------------*/
-#include "arkanoPi_6.h"
+#include "arkanoPi_7.h"
 
 /* Private variables ---------------------------------------------------------*/
 static volatile tipo_juego juego;
@@ -341,12 +341,12 @@ void InicializaArkano (fsm_t* fsm) {
 	piUnlock (FLAGS_KEY);
 
 	piLock (STD_IO_BUFFER_KEY);
-	printf("\n-------ARKANO-------\nInstrucciones de juego:\nTecla izquierda [i]: mover pala a la izquierda\Tecla derecha [o]: mover pala a la derecha\n");
+	printf("\n-------ARKANO-------\nInstrucciones de juego:\nTecla izquierda [i]: mover pala a la izquierda\nTecla derecha [o]: mover pala a la derecha\n");
 	piUnlock (STD_IO_BUFFER_KEY);
 
 	InicializaArkanoPi((tipo_arkanoPi *) &juego.arkanoPi);
 	juego.display = juego.arkanoPi.pantalla;
-	PintaPantallaPorTerminal(&juego.display);
+	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
 	timer_pelota_start(500);
 	timer_raqueta_start(100);
 
@@ -361,14 +361,14 @@ void InicializaSnake (fsm_t* fsm) {
 	flags &= ~FLAG_RAQUETA_DERECHA;
 	piUnlock (FLAGS_KEY);
 
-	iLock (STD_IO_BUFFER_KEY);
-	printf("\n-------SNAKE-------\nInstrucciones de juego:\nTecla izquierda [i]: girar serpiente a la izquierda\Tecla derecha [o]: girar serpiente a la derecha\n");
+	piLock (STD_IO_BUFFER_KEY);
+	printf("\n-------SNAKE-------\nInstrucciones de juego:\nTecla izquierda [i]: girar serpiente a la izquierda\nTecla derecha [o]: girar serpiente a la derecha\n");
 	piUnlock (STD_IO_BUFFER_KEY);
 
 	InicializaSnakePi((tipo_snakePi *) &juego.snakePi);
 	juego.display = juego.snakePi.pantalla;
-	PintaPantallaPorTerminal(&juego.display);
-	//timer_serpiente_start(500);
+	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
+	timer_serpiente_start(500);
 
 }
 /**
@@ -387,10 +387,10 @@ void MueveRaquetaIzquierda (fsm_t* fsm) {
 	}
 	piLock(JUEGO_KEY);
 	juego.arkanoPi.raqueta.x = juego.arkanoPi.raqueta.x - 1;
-	ActualizaPantalla((tipo_arkanoPi*)&juego.arkanoPi);
+	ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
 	juego.display = juego.arkanoPi.pantalla;
 	piUnlock(JUEGO_KEY);
-	PintaPantallaPorTerminal(&juego.display);
+	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
 
 }
 
@@ -410,10 +410,10 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
 		}
 		piLock(JUEGO_KEY);
 		juego.arkanoPi.raqueta.x = juego.arkanoPi.raqueta.x + 1;
-		ActualizaPantalla((tipo_arkanoPi*)&juego.arkanoPi);
+		ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
 		juego.display = juego.arkanoPi.pantalla;
 		piUnlock(JUEGO_KEY);
-		PintaPantallaPorTerminal(&juego.display);
+		PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
 
 }
 /**
@@ -422,14 +422,14 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
  */
 void MueveRaqueta(int posicion){
 	int ancho=juego.arkanoPi.raqueta.ancho;
-	if(posicion + (ancho-1) <= 0 || posicion > MATRIZ_ANCHO-1){
+	if(posicion + (ancho) <= 0 || posicion > MATRIZ_ANCHO-1){
 		printf("Posicion de raquera erronea");
 		return;
 	}
 	juego.arkanoPi.raqueta.x = posicion;
-	ActualizaPantalla((tipo_arkanoPi*)&juego.arkanoPi);
+	ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
 	juego.display = juego.arkanoPi.pantalla;
-	PintaPantallaPorTerminal(&juego.display);
+	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
 }
 
 /**
@@ -475,7 +475,7 @@ void MovimientoPelota (fsm_t* fsm) {
 		flags |= FLAG_FINAL_JUEGO;
 		piUnlock (FLAGS_KEY);
 		piLock(JUEGO_KEY);
-		PintaMensajeInicialPantalla(&juego.display,&pantalla_gameover);
+		PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_gameover);
 		piUnlock(JUEGO_KEY);
 		return;
 	}
@@ -490,7 +490,7 @@ void MovimientoPelota (fsm_t* fsm) {
 			flags |= FLAG_FINAL_JUEGO;
 			piUnlock (FLAGS_KEY);
 			piLock(JUEGO_KEY);
-			PintaMensajeInicialPantalla(&juego.display,&pantalla_victoria);
+			PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_victoria);
 			piUnlock(JUEGO_KEY);
 			return;
 		}
@@ -526,16 +526,19 @@ void MovimientoPelota (fsm_t* fsm) {
 	juego.arkanoPi.pelota.xv = sigXV;
 	juego.arkanoPi.pelota.yv = sigYV;
 
-	ActualizaPantalla((tipo_arkanoPi*)&juego.arkanoPi);
+	ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
 	piUnlock(JUEGO_KEY);
 	juego.display = juego.arkanoPi.pantalla;
-	PintaPantallaPorTerminal(&juego.display);
+	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
 
 }
 /**
  * @brief			Hace avanzar a la serpiente de acuerdo a la posicion de su cabeza y su direccion
  */
 void AvanzaSerpiente(fsm_t* fsm){
+	piLock (FLAGS_KEY);
+	flags &= ~FLAG_PELOTA;
+	piUnlock (FLAGS_KEY);
 	int headx = juego.snakePi.serpiente.matriz[0].x;
 	int heady = juego.snakePi.serpiente.matriz[0].y;
 	int vx = juego.snakePi.serpiente.vx;
@@ -543,21 +546,22 @@ void AvanzaSerpiente(fsm_t* fsm){
 	int sigX = 0;
 	int sigY = 0;
 
+	int sigx = headx + vx;
+	sigX = sigx;
+	int sigy = heady + vy;
+	sigY = sigy;
 	//Compruebo si el movimiento es hacia fuera de la pantalla y en ese caso vuelvo por el otro lado
 	if(vx != 0){
-		int sigx = headx + vx;
-		sigX = sigx;
 		if(sigx < 0){
-			sigX = MATRIZ_ANCHO -1;
+			sigX = MATRIZ_ANCHO - 1;
 		}
 		if(sigx >= MATRIZ_ANCHO){
 			sigX = 0;
 		}
 	}
 	if(vy != 0){
-		int sigy = heady + vy;
 		if(sigy < 0){
-			sigY = MATRIZ_ALTO - -1;
+			sigY = MATRIZ_ALTO -1;
 		}
 		if(sigy >= MATRIZ_ALTO){
 			sigY = 0;
@@ -574,7 +578,7 @@ void AvanzaSerpiente(fsm_t* fsm){
 			flags |= FLAG_FINAL_JUEGO;
 			piUnlock (FLAGS_KEY);
 			piLock(JUEGO_KEY);
-			PintaMensajeInicialPantalla(&juego.display,&pantalla_gameover);
+			PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_gameover);
 			piUnlock(JUEGO_KEY);
 			return;
 		}
@@ -582,14 +586,14 @@ void AvanzaSerpiente(fsm_t* fsm){
 	//Compruebo si habia una presa en la nueva posicion de la cabeza y aumento el tamaño de la serpiente
 	if(sigX == juego.snakePi.presa.posicion.x && sigY == juego.snakePi.presa.posicion.y){
 		juego.snakePi.serpiente.size += 1;
-		ReseteaPresaAleatorio((tipo_presa) *(&(juego.snakePi.presa)));
+		ReseteaPresaAleatorio((tipo_presa*)(&(juego.snakePi.presa)));
 		//Compruebo si se ha alcanzado el tamaño de victoria
 		if(juego.snakePi.serpiente.size >= LONG_MAX){
 			printf("Has ganado! \n");
 			piLock (FLAGS_KEY);
 			flags |= FLAG_FINAL_JUEGO;
 			piUnlock (FLAGS_KEY);
-			PintaMensajeInicialPantalla(&juego.display,&pantalla_victoria);
+			PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_victoria);
 			return;
 		}
 	}
@@ -599,12 +603,12 @@ void AvanzaSerpiente(fsm_t* fsm){
 	for(j=cola;j>0;j--){
 		juego.snakePi.serpiente.matriz[j] = juego.snakePi.serpiente.matriz[j-1];//Desde la cola copio la posicion de el siguiente elemento
 	}
-	juego.snakePi.serpiente.matriz[0].x = sigX;//Muevo la cabeza a la posicion designada por sigX/sigY
+	juego.snakePi.serpiente.matriz[0].x = sigX;//Muevo la cabeza a la posicion designada por sigX, sigY
 	juego.snakePi.serpiente.matriz[0].y = sigY;
 
-	ActualizaPantalla((tipo_snakePi*)&juego.snakePi);
+	ActualizaPantallaSnake((tipo_snakePi*)&juego.snakePi);
 	juego.display = juego.snakePi.pantalla;
-	PintaPantallaPorTerminal((tipo_pantalla)*(&(juego.snakePi.pantalla)));
+	PintaPantallaPorTerminal((tipo_pantalla*)(&(juego.snakePi.pantalla)));
 
 
 }
@@ -613,47 +617,44 @@ void AvanzaSerpiente(fsm_t* fsm){
  * @brief			Hace girar a la serpiente hacia la derecha modificando su direccion
  */
 void GiraSerpienteDerecha(fsm_t* fsm){
+	piLock (FLAGS_KEY);
+	flags &= ~FLAG_TECLA;
+	flags &= ~FLAG_RAQUETA_DERECHA;
+	piUnlock (FLAGS_KEY);
 	int vx = juego.snakePi.serpiente.vx;
 	int vy = juego.snakePi.serpiente.vy;
 	int VX = 0;
 	int VY = 0;
 
-	switch(vy){
-	case -1:
+	if(vy == -1){
 		VX = 1;
 		VY = 0;
-		break;
-	case 1:
+	}
+	if(vy == 1){
 		VX = -1;
 		VY = 0;
-		break;
-	default:
-		VX = vx;
-		VY = vy;
-		break;
 	}
-	switch(vx){
-		case -1:
-			VX = 0;
-			VY = -1;
-			break;
-		case 1:
-			VX = 0;
-			VY = 1;
-			break;
-		default:
-			VX = vx;
-			VY = vy;
-			break;
+	if(vx == -1){
+		VX = 0;
+		VY = -1;
+	}
+	if(vx == 1){
+		VX = 0;
+		VY = 1;
 	}
 	juego.snakePi.serpiente.vx = VX;
 	juego.snakePi.serpiente.vy = VY;
+	printf("Nuevo movimiento en x:%d, en y:%d\n",juego.snakePi.serpiente.vx,juego.snakePi.serpiente.vy);
 }
 
 /**
  * @brief			Hace girar a la izquierda hacia la derecha modificando su direccion
  */
 void GiraSerpienteIzquierda(fsm_t* fsm){
+	piLock (FLAGS_KEY);
+	flags &= ~FLAG_TECLA;
+	flags &= ~FLAG_RAQUETA_IZQUIERDA;
+	piUnlock (FLAGS_KEY);
 	int vx = juego.snakePi.serpiente.vx;
 	int vy = juego.snakePi.serpiente.vy;
 	int VX = 0;
@@ -689,6 +690,7 @@ void GiraSerpienteIzquierda(fsm_t* fsm){
 	}
 	juego.snakePi.serpiente.vx = VX;
 	juego.snakePi.serpiente.vy = VY;
+	printf("Nuevo movimiento en x:%d, en y:%d\n",juego.snakePi.serpiente.vx,juego.snakePi.serpiente.vy);
 }
 
 /**
@@ -716,7 +718,7 @@ void ReseteaJuego (fsm_t* fsm) {
 
 	printf("\nA la espera de recomenzar...\nPulsa 'i' para inicial Arkano\nPulsa 'o' para iniciar Snake\n Pulsa 'q' para salir\n");
 	piLock (JUEGO_KEY);
-	PintaMensajeInicialPantalla(&juego.display,&pantalla_inicial);
+	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_inicial);
 	piUnlock (JUEGO_KEY);
 }
 
@@ -907,11 +909,11 @@ static int timer_pelota_start(int ms){
  */
 static void timer_raqueta_isr (union sigval arg) {
 
-	float voltaje = lecturaADC();
-	float max = 1.3;
-	float intervalo = max/10;
-
-	int posicion = (int) voltaje/intervalo;
+	float voltaje = lectura_ADC();
+	float intervalo = 0.13;
+	int posicion = -2;
+	int  cambioPos = (int) (voltaje/intervalo -1);
+	posicion = posicion + cambioPos;
 	MueveRaqueta(posicion);
 }
 /**
@@ -945,18 +947,58 @@ static int timer_raqueta_start(int ms){
 	return result;
 }
 /**
+ * @brief			Rutina de atencion a la interrupcion periodica que provoca el movimieto de la serpiete en SnakePi
+ */
+static void timer_serpiente_isr (union sigval arg) {
+
+	piLock (FLAGS_KEY);
+	flags |= FLAG_PELOTA;
+	piUnlock (FLAGS_KEY);
+}
+/**
+ * @brief			Inicializa el temporizador asociado a la interrupcion periodica que provoca el movimiento de la serpiente
+ * @param	ms		Intervalo de tiempo entre interrupciones
+ */
+static int timer_serpiente_start(int ms){
+
+	int result = 2;
+
+	struct itimerspec spec;
+	struct sigevent se;
+
+	se.sigev_notify = SIGEV_THREAD;
+	se.sigev_value.sival_ptr = &timerSerpiente;
+	se.sigev_notify_function = timer_serpiente_isr;
+	se.sigev_notify_attributes = NULL;
+
+	spec.it_value.tv_sec = ms / 1000;
+	spec.it_value.tv_nsec = (ms % 1000) * 1000000;
+	spec.it_interval.tv_sec = ms / 1000;
+	spec.it_interval.tv_nsec = (ms % 1000) * 1000000;
+
+	result = timer_create (CLOCK_REALTIME, &se, &timerSerpiente);
+	printf("result after create = %d\n", result);
+	fflush(stdout);
+	result = timer_settime (timerSerpiente, 0, &spec, NULL);
+	printf("result after settime = %d\n", result);
+	fflush(stdout);
+
+	return result;
+}
+/**
  * @brief			Realiza la lectura del ADC en la entrenadora mediante el protocolo SPI
  */
 float lectura_ADC(void){
 	unsigned char ByteSPI[3]; //Buffer lectura escritura SPI
-	int resultado_SPI = 0; //Control operacion SPI
+	//int resultado_SPI = 0; //Control operacion SPI
 	float voltaje_medido = 0.0; //Valor medido. A calcular a partir del buffer
 
 	ByteSPI[0] = 0b10011111; // Configuracion ADC (10011111 unipolar, 0-2.5v,canal 0, salida 1), bipolar 0b10010111
 	ByteSPI[1] = 0b0;
 	ByteSPI[2] = 0b0;
 
-	resultado_SPI = wiringPiSPIDataRW (SPI_ADC_CH, ByteSPI, 3);//Enviamos y leemos tres bytes (8+12+4 bits)
+	//resultado_SPI =
+	wiringPiSPIDataRW (SPI_ADC_CH, ByteSPI, 3);//Enviamos y leemos tres bytes (8+12+4 bits)
 	usleep(20);
 
 	int salida_SPI = ((ByteSPI[1] << 5) | (ByteSPI[2] >> 3)) & 0xFFF;
@@ -1029,6 +1071,7 @@ int main ()
 			{ WAIT_PUSH_ARKANO,   comprueba_tecla_pelota,  WAIT_PUSH_ARKANO, MovimientoPelota },
 			{ WAIT_PUSH_ARKANO,   comprueba_tecla_izquierda,  WAIT_PUSH_ARKANO, MueveRaquetaIzquierda },
 			{ WAIT_PUSH_ARKANO,   comprueba_tecla_derecha,  WAIT_PUSH_ARKANO, MueveRaquetaDerecha },
+			{ WAIT_PUSH_SNAKE,    comprueba_tecla_pelota,  WAIT_PUSH_SNAKE,  AvanzaSerpiente},
 			{ WAIT_PUSH_SNAKE,    comprueba_tecla_izquierda,  WAIT_PUSH_SNAKE,  GiraSerpienteIzquierda},
 			{ WAIT_PUSH_SNAKE,    comprueba_tecla_derecha,  WAIT_PUSH_SNAKE,  GiraSerpienteDerecha},
 			{ WAIT_PUSH_ARKANO,   comprueba_final_juego,  WAIT_END, FinalJuego },
@@ -1047,7 +1090,7 @@ int main ()
 	piUnlock (STD_IO_BUFFER_KEY);
 	//Pinta pantalla inicial
 	piLock (JUEGO_KEY);
-	PintaMensajeInicialPantalla(&juego.display,&pantalla_inicial);
+	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_inicial);
 	piUnlock (JUEGO_KEY);
 
 	//Bucle infinito

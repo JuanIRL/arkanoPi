@@ -67,6 +67,8 @@ static int timer_pelota_start(int ms);
 static void timer_pelota_isr (union sigval arg);
 static int timer_raqueta_start(int ms);
 static void timer_raqueta_isr (union sigval arg);
+static int timer_serpiente_start(int ms);
+static void timer_serpiente_isr (union sigval arg);
 
 //------------------------------------------------------
 // FUNCIONES DE LECTURA/ESCRITURA EN PERIFERICOS SPI
@@ -98,7 +100,7 @@ void MueveRaqueta(int posicion);
 // FUNCIONES DE ACCION SNAKEPI
 //------------------------------------------------------
 void InicializaSnake (fsm_t* fsm);
-void AvanzaSerpiente(fsm_t* fsm);
+void AvanzaSerpiente(fsm_t*);
 void GiraSerpienteDerecha(fsm_t* fsm);
 void GiraSerpienteIzquierda(fsm_t* fsm);
 //------------------------------------------------------

@@ -139,7 +139,7 @@ void PintaPelota(tipo_pelota *p_pelota, tipo_pantalla *p_pantalla) {
 // cualquiera de los movimientos de la raqueta o de la pelota y que
 // sera el encargado de actualizar convenientemente la estructura de datos
 // en memoria que representa el Ã¡rea de juego y su correspondiente estado.
-void ActualizaPantalla(tipo_arkanoPi* p_arkanoPi) {
+void ActualizaPantallaArkano(tipo_arkanoPi* p_arkanoPi) {
     // Borro toda la pantalla
 	ReseteaMatriz((tipo_pantalla*)(&(p_arkanoPi->pantalla)));
 
@@ -162,7 +162,7 @@ void InicializaArkanoPi(tipo_arkanoPi *p_arkanoPi) {
 	ReseteaPelota((tipo_pelota*)(&(p_arkanoPi->pelota)));
 	ReseteaRaqueta((tipo_raqueta*)(&(p_arkanoPi->raqueta)));
 
-	ActualizaPantalla(p_arkanoPi);
+	ActualizaPantallaArkano(p_arkanoPi);
 
 
 

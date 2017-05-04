@@ -61,7 +61,7 @@ void PintaPantallaPorTerminal (tipo_pantalla *p_pantalla);
 void PintaLadrillos(tipo_pantalla *p_ladrillos, tipo_pantalla *p_pantalla);
 void PintaRaqueta(tipo_raqueta *p_raqueta, tipo_pantalla *p_pantalla);
 void PintaPelota(tipo_pelota *p_pelota, tipo_pantalla *p_pantalla);
-void ActualizaPantalla(tipo_arkanoPi* p_arkanoPi);
+void ActualizaPantallaArkano(tipo_arkanoPi* p_arkanoPi);
 
 void InicializaArkanoPi(tipo_arkanoPi *p_arkanoPi);
 int CalculaLadrillosRestantes(tipo_pantalla *p_ladrillos);

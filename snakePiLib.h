@@ -3,6 +3,7 @@
 #define SNAKEPILIB_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "arkanoPiLib.h"
 
@@ -46,7 +47,7 @@ void ReseteaPresaAleatorio(tipo_presa *p_presa);
 //------------------------------------------------------
 void PintaSerpiente(tipo_serpiente *p_serpiente, tipo_pantalla *p_pantalla);
 void PintaPresa(tipo_presa *p_presa, tipo_pantalla *p_pantalla);
-void ActualizaPantalla(tipo_snakePi* p_snakePi);
+void ActualizaPantallaSnake(tipo_snakePi* p_snakePi);
 
 void InicializaSnakePi(tipo_snakePi *p_snakePi);
 
