@@ -17,14 +17,18 @@
 #include "tmr.h"// para poder crear y ejecutar la máquina de estados
 
 #include "arkanoPiLib.h"
+#include "snakePiLib.h"
 
 typedef enum {
 	WAIT_START,
-	WAIT_PUSH,
+	WAIT_PUSH_ARKANO,
+	WAIT_PUSH_SNAKE,
 	WAIT_END} tipo_estados_juego;
 
 typedef struct {
 	tipo_arkanoPi arkanoPi;
+	tipo_snakePi snakePi;
+	tipo_pantalla display;
 	tipo_estados_juego estado;
 	char teclaPulsada;
 } tipo_juego;
@@ -32,7 +36,7 @@ typedef struct {
 #include "kbhit.h" // para poder detectar teclas pulsadas sin bloqueo y leer las teclas pulsadas
 
 #define CLK_MS 10 // PERIODO DE ACTUALIZACION DE LA MAQUINA ESTADOS
-#define CLK_DISPLAY 1
+#define CLK_DISPLAY 1 //PERIODO DE REFRESCO DE CADA COLUMNA DE LEDS DEL DISPLAY
 
 // FLAGS DEL SISTEMA
 #define FLAG_TECLA			     0x01
@@ -51,9 +55,9 @@ typedef struct {
 //------------------------------------------------------
 // FUNCIONES DE ENCENDIDO LEDS
 //------------------------------------------------------
-
 void enciende_columna(int numero);
 void endiende_filas(int filas);
+
 //------------------------------------------------------
 // FUNCIONES DE TEMPORIZADORES
 //------------------------------------------------------
@@ -63,14 +67,17 @@ static int timer_pelota_start(int ms);
 static void timer_pelota_isr (union sigval arg);
 static int timer_raqueta_start(int ms);
 static void timer_raqueta_isr (union sigval arg);
+static int timer_serpiente_start(int ms);
+static void timer_serpiente_isr (union sigval arg);
+
 //------------------------------------------------------
 // FUNCIONES DE LECTURA/ESCRITURA EN PERIFERICOS SPI
 //------------------------------------------------------
 float lectura_ADC(void);
+
 //------------------------------------------------------
 // FUNCIONES DE ENTRADA O DE TRANSICION DE LA MAQUINA DE ESTADOS
 //------------------------------------------------------
-// Prototipos de funciones de entrada
 int comprueba_tecla_pulsada (fsm_t* this);
 int comprueba_tecla_pelota (fsm_t* this);
 int comprueba_tecla_raqueta_derecha (fsm_t* this);
@@ -79,18 +86,23 @@ int comprueba_final_juego (fsm_t* this);
 int comprueba_joystick (fsm_t* this);
 
 //------------------------------------------------------
-// FUNCIONES DE ACCION
+// FUNCIONES DE ACCION ARKANOPI
 //------------------------------------------------------
-
-void InicializaJuego (fsm_t* fsm);
+void InicializaArkano (fsm_t* fsm);
 void MueveRaquetaIzquierda (fsm_t* fsm);
 void MueveRaquetaDerecha (fsm_t* fsm);
 void MovimientoPelota (fsm_t* fsm);
 void FinalJuego (fsm_t* fsm);
 void ReseteaJuego (fsm_t* fsm);
-
+//Movimiento de la raqueta con Joystick
 void MueveRaqueta(int posicion);
-
+//------------------------------------------------------
+// FUNCIONES DE ACCION SNAKEPI
+//------------------------------------------------------
+void InicializaSnake (fsm_t* fsm);
+void AvanzaSerpiente(fsm_t*);
+void GiraSerpienteDerecha(fsm_t* fsm);
+void GiraSerpienteIzquierda(fsm_t* fsm);
 //------------------------------------------------------
 // FUNCIONES DE INICIALIZACION
 //------------------------------------------------------
