@@ -337,8 +337,6 @@ void InicializaJuego (fsm_t* fsm) {
 	piUnlock (FLAGS_KEY);
 	// A completar por el alumno...
 
-	//PintaMensajeInicialPantalla((tipo_pantalla *)&juego.arkanoPi.pantalla, (tipo_pantalla *)&pantalla_inicial);
-	//PintaPantallaPorTerminal((tipo_pantalla *)&juego.arkanoPi.pantalla);
 	InicializaArkanoPi((tipo_arkanoPi *) &juego.arkanoPi);
 	PintaPantallaPorTerminal((tipo_pantalla *)&juego.arkanoPi.pantalla);
 	timer_pelota_start(500);
@@ -396,8 +394,8 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
  */
 void MueveRaqueta(int posicion){
 	int ancho=juego.arkanoPi.raqueta.ancho;
-	if(posicion + (ancho-1) <= 0 || posicion > MATRIZ_ANCHO-1){
-		printf("Posicion de raquera erronea");
+	if(posicion + (ancho) <= 0 || posicion > MATRIZ_ANCHO-1){
+		printf("Posicion de raqueta erronea");
 		return;
 	}
 	juego.arkanoPi.raqueta.x = posicion;
@@ -514,6 +512,7 @@ void FinalJuego (fsm_t* fsm) {
 	flags &= ~FLAG_FINAL_JUEGO;
 	piUnlock (FLAGS_KEY);
 	timer_delete(timerPelota);
+	timer_delete(timerRaqueta);
 	printf("Fin del juego.\nPulsa una tecla para volver a empezar\n");
 	juego.estado=WAIT_END;
 
@@ -732,11 +731,11 @@ static int timer_pelota_start(int ms){
  */
 static void timer_raqueta_isr (union sigval arg) {
 
-	float voltaje = lecturaADC();
-	float max = 1.3;
-	float intervalo = max/10;
-
-	int posicion = (int) voltaje/intervalo;
+	float voltaje = lectura_ADC();
+	float intervalo = 0.13;
+	int posicion = -2;
+	int  cambioPos = (int) (voltaje/intervalo -1);
+	posicion = posicion + cambioPos;
 	MueveRaqueta(posicion);
 }
 /**
@@ -774,20 +773,22 @@ static int timer_raqueta_start(int ms){
  */
 float lectura_ADC(void){
 	unsigned char ByteSPI[3]; //Buffer lectura escritura SPI
-	int resultado_SPI = 0; //Control operacion SPI
+	//int resultado_SPI = 0; //Control operacion SPI
 	float voltaje_medido = 0.0; //Valor medido. A calcular a partir del buffer
 
 	ByteSPI[0] = 0b10011111; // Configuracion ADC (10011111 unipolar, 0-2.5v,canal 0, salida 1), bipolar 0b10010111
 	ByteSPI[1] = 0b0;
 	ByteSPI[2] = 0b0;
 
-	resultado_SPI = wiringPiSPIDataRW (SPI_ADC_CH, ByteSPI, 3);//Enviamos y leemos tres bytes (8+12+4 bits)
+	//resultado_SPI =
+	wiringPiSPIDataRW (SPI_ADC_CH, ByteSPI, 3);//Enviamos y leemos tres bytes (8+12+4 bits)
 	usleep(20);
 
 	int salida_SPI = ((ByteSPI[1] << 5) | (ByteSPI[2] >> 3)) & 0xFFF;
 
 	/*Caso unipolar */
 	voltaje_medido = 2*2.50 * (((float) salida_SPI)/4095.0);
+
 	return voltaje_medido;
 }
 /**
