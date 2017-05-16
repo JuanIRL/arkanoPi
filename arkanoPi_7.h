@@ -107,6 +107,11 @@ void GiraSerpienteIzquierda(fsm_t* fsm);
 // FUNCIONES DE INICIALIZACION
 //------------------------------------------------------
 int systemSetup (void);
+//------------------------------------------------------
+// FUNCIONES QUE MANEJAN VICTORIA Y DERROTA
+//------------------------------------------------------
+void Victoria(tipo_estados_juego estado);
+void Derrota(tipo_estados_juego estado);
 
 int areaPala(tipo_raqueta *p_pala);
 //------------------------------------------------------

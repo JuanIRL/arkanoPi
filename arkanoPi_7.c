@@ -340,7 +340,6 @@ void InicializaArkano (fsm_t* fsm) {
 	flags &= ~FLAG_RAQUETA_IZQUIERDA;
 	piUnlock (FLAGS_KEY);
 
-
 	piLock (STD_IO_BUFFER_KEY);
 	printf("\n-------ARKANO-------\nInstrucciones de juego:\nTecla izquierda [i]: mover pala a la izquierda\nTecla derecha [o]: mover pala a la derecha\n");
 	piUnlock (STD_IO_BUFFER_KEY);
@@ -424,9 +423,7 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
 void MueveRaqueta(int posicion){
 	int ancho=juego.arkanoPi.raqueta.ancho;
 	if(posicion + (ancho) <= 0 || posicion > MATRIZ_ANCHO-1){
-
-        printf("Posicion de raqueta erronea");
-
+		printf("Posicion de raquera erronea");
 		return;
 	}
 	juego.arkanoPi.raqueta.x = posicion;
@@ -474,12 +471,7 @@ void MovimientoPelota (fsm_t* fsm) {
 	}
 	if(sigY > MATRIZ_ALTO -1){
 		printf("Game Over...\n");
-		piLock (FLAGS_KEY);
-		flags |= FLAG_FINAL_JUEGO;
-		piUnlock (FLAGS_KEY);
-		piLock(JUEGO_KEY);
-		PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_gameover);
-		piUnlock(JUEGO_KEY);
+		Derrota(fsm->current_state);
 		return;
 	}
 
@@ -489,12 +481,7 @@ void MovimientoPelota (fsm_t* fsm) {
 		int restantes = CalculaLadrillosRestantes((tipo_pantalla*) &juego.arkanoPi.ladrillos);
 		if(restantes <=15){
 			printf("Has ganado! \n");
-			piLock (FLAGS_KEY);
-			flags |= FLAG_FINAL_JUEGO;
-			piUnlock (FLAGS_KEY);
-			piLock(JUEGO_KEY);
-			PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_victoria);
-			piUnlock(JUEGO_KEY);
+			Victoria(fsm->current_state);
 			return;
 		}
 		sigYV = -yv;
@@ -577,12 +564,7 @@ void AvanzaSerpiente(fsm_t* fsm){
 		int posy = juego.snakePi.serpiente.matriz[i].y;
 		if(sigX == posx && sigY == posy){
 			printf("Game Over...\n");
-			piLock (FLAGS_KEY);
-			flags |= FLAG_FINAL_JUEGO;
-			piUnlock (FLAGS_KEY);
-			piLock(JUEGO_KEY);
-			PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_gameover);
-			piUnlock(JUEGO_KEY);
+			Derrota(fsm->current_state);
 			return;
 		}
 	}
@@ -593,10 +575,7 @@ void AvanzaSerpiente(fsm_t* fsm){
 		//Compruebo si se ha alcanzado el tamaño de victoria
 		if(juego.snakePi.serpiente.size >= LONG_MAX){
 			printf("Has ganado! \n");
-			piLock (FLAGS_KEY);
-			flags |= FLAG_FINAL_JUEGO;
-			piUnlock (FLAGS_KEY);
-			PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_victoria);
+			Victoria(fsm->current_state);
 			return;
 		}
 	}
@@ -663,39 +642,62 @@ void GiraSerpienteIzquierda(fsm_t* fsm){
 	int VX = 0;
 	int VY = 0;
 
-	switch(vy){
-	case -1:
+	if(vy == -1){
 		VX = -1;
 		VY = 0;
-		break;
-	case 1:
+	}
+	if(vy == 1){
 		VX = 1;
 		VY = 0;
-		break;
-	default:
-		VX = vx;
-		VY = vy;
-		break;
 	}
-	switch(vx){
-		case -1:
-			VX = 0;
-			VY = 1;
-			break;
-		case 1:
-			VX = 0;
-			VY = -1;
-			break;
-		default:
-			VX = vx;
-			VY = vy;
-			break;
+	if(vx == -1){
+		VX = 0;
+		VY = 1;
+	}
+	if(vx == 1){
+		VX = 0;
+		VY = -1;
 	}
 	juego.snakePi.serpiente.vx = VX;
 	juego.snakePi.serpiente.vy = VY;
 	printf("Nuevo movimiento en x:%d, en y:%d\n",juego.snakePi.serpiente.vx,juego.snakePi.serpiente.vy);
 }
+/**
+ * @brief	Funcion para terminar el juego y generar mensaje de victoria.
+ * 			Para los temporizadores y genera mensaje en funcion del juego activo.
+ * @param	tipo_estados_juego estado	Estado del juego cuando se ha llamado a la funcion. Determina temporizadores a parar
+ */
+void Victoria(tipo_estados_juego estado){
 
+	if(estado == WAIT_PUSH_ARKANO){
+		timer_delete(timerPelota);
+		timer_delete(timerRaqueta);
+	} else if(estado == WAIT_PUSH_SNAKE){
+		timer_delete(timerSerpiente);
+	}
+	piLock (FLAGS_KEY);
+	flags |= FLAG_FINAL_JUEGO;
+	piUnlock (FLAGS_KEY);
+	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_victoria);
+}
+/**
+ * @brief	Funcion para terminar el juego y generar mensaje de victoria.
+ * 			Para los temporizadores y genera mensaje en funcion del juego activo.
+ * @param	tipo_estados_juego estado	Estado del juego cuando se ha llamado a la funcion. Determina temporizadores a parar
+ */
+void Derrota(tipo_estados_juego estado){
+
+	if(estado == WAIT_PUSH_ARKANO){
+		timer_delete(timerPelota);
+		timer_delete(timerRaqueta);
+	} else if(estado == WAIT_PUSH_SNAKE){
+		timer_delete(timerSerpiente);
+	}
+	piLock (FLAGS_KEY);
+	flags |= FLAG_FINAL_JUEGO;
+	piUnlock (FLAGS_KEY);
+	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_gameover);
+}
 /**
  * @brief			Lleva el juego al estado final. Pinta por pantalla mensaje de fin de juego
  */
@@ -703,10 +705,6 @@ void FinalJuego (fsm_t* fsm) {
 	piLock (FLAGS_KEY);
 	flags &= ~FLAG_FINAL_JUEGO;
 	piUnlock (FLAGS_KEY);
-	timer_delete(timerPelota);
-	timer_delete(timerRaqueta);
-
-	timer_delete(timerSerpiente);
 	printf("-------Fin del juego--------\nPulsa una tecla para volver a empezar\n");
 
 
@@ -1009,7 +1007,6 @@ float lectura_ADC(void){
 
 	/*Caso unipolar */
 	voltaje_medido = 2*2.50 * (((float) salida_SPI)/4095.0);
-
 	return voltaje_medido;
 }
 /**
