@@ -1,8 +1,12 @@
 /** File Name          : arkanoPi_3.c
   * Description        : Main program body
   */
+
+/* Control uso de mensajes y eventos en modo debug ---------------------------*/
+//#define __MODO_DEBUG_TERMINAL__ 1
+
 /* Includes ------------------------------------------------------------------*/
-#include "arkanoPi_7.h"
+#include "arkanoPi_8.h"
 
 /* Private variables ---------------------------------------------------------*/
 static volatile tipo_juego juego;
@@ -16,16 +20,17 @@ timer_t timerSerpiente;
 
 tipo_pantalla pantalla_inicial = {
 		{
-			{1,0,0,0,0,0,1},
-			{1,1,0,0,0,1,1},
-			{0,1,1,0,1,1,0},
-			{0,0,1,1,1,0,0},
+			{0,1,1,1,1,1,1},
+			{1,1,0,0,1,0,0},
+			{1,0,0,0,1,0,0},
+			{1,1,0,0,1,0,0},
+			{0,1,1,1,1,1,1},
+
+			{0,1,1,0,0,0,1},
 			{1,0,0,1,0,0,1},
-			{1,1,0,0,0,1,1},
-			{0,1,1,0,1,1,0},
-			{0,0,1,1,1,0,0},
-			{0,0,0,1,0,0,0},
-			{0,0,0,0,0,0,0},
+			{1,0,0,1,0,0,1},
+			{1,0,0,1,0,0,1},
+			{1,0,0,0,1,1,0},
 		}
 };
 tipo_pantalla pantalla_gameover = {
@@ -47,15 +52,16 @@ tipo_pantalla pantalla_victoria = {
 			{0,0,0,0,0,0,0},
 			{0,0,0,0,0,0,0},
 			{0,1,1,0,1,1,0},
-			{1,1,0,0,1,1,0},
-			{1,1,0,0,0,0,0},
-			{1,1,0,0,0,0,0},
-			{1,1,0,0,1,1,0},
+			{0,1,1,0,0,1,1},
+			{0,0,0,0,0,1,1},
+			{0,0,0,0,0,1,1},
+			{0,1,1,0,0,1,1},
 			{0,1,1,0,1,1,0},
 			{0,0,0,0,0,0,0},
 			{0,0,0,0,0,0,0},
 		}
 };
+
 /* Defines -------------------------------------------------------------------*/
 //PINES QUE CONTROLAN EL DISPLAY
 #define GPIO_FILA_1 0
@@ -75,12 +81,15 @@ static int GPIO_FILAS [7] = {GPIO_FILA_1, GPIO_FILA_2, GPIO_FILA_3, GPIO_FILA_4,
 static int GPIO_COLUMNAS [4] = {GPIO_COL_1, GPIO_COL_2, GPIO_COL_3, GPIO_COL_4};
 
 //Constantes temporizadores
-#define DEBOUNCE_TIME 50
+#define DEBOUNCE_TIME 300
 int debounceTime = 0;
 
 //Pines de las interrupciones
 #define GPIO_PALA_DERECHA 20
 #define GPIO_PALA_IZQUIERDA 21
+
+//Pin para sonidos
+#define GPIO_BUZZER 24
 
 //Constantes configuracion SPI
 #define SPI_ADC_CH 0
@@ -118,68 +127,6 @@ void enciende_columna(int numero){
 	digitalWrite(GPIO_COLUMNAS[1],numero & 0x02);//Bit de seleccion 2
 	digitalWrite(GPIO_COLUMNAS[2],numero & 0x04);//Bit de seleccion 3
 	digitalWrite(GPIO_COLUMNAS[3],numero & 0x08);//Bit de seleccion 4
-	/**switch (numero) {
-		case 0:
-			digitalWrite(GPIO_COLUMNAS[0],0);//Bit de seleccion 1
-			digitalWrite(GPIO_COLUMNAS[1],0);//Bit de seleccion 2
-			digitalWrite(GPIO_COLUMNAS[2],0);//Bit de seleccion 3
-			digitalWrite(GPIO_COLUMNAS[3],0);
-			break;
-		case 1:
-					digitalWrite(GPIO_COLUMNAS[0],1);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],0);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],0);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 2:
-					digitalWrite(GPIO_COLUMNAS[0],0);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],1);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],0);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 3:
-					digitalWrite(GPIO_COLUMNAS[0],1);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],1);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],0);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 4:
-					digitalWrite(GPIO_COLUMNAS[0],0);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],0);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],1);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 5:
-					digitalWrite(GPIO_COLUMNAS[0],1);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],0);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],1);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 6:
-					digitalWrite(GPIO_COLUMNAS[0],0);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],1);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],1);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 7:
-					digitalWrite(GPIO_COLUMNAS[0],1);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],1);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],1);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],0);
-					break;
-		case 8:
-					digitalWrite(GPIO_COLUMNAS[0],0);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],0);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],0);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],1);
-					break;
-		case 9:
-					digitalWrite(GPIO_COLUMNAS[0],1);//Bit de seleccion 1
-					digitalWrite(GPIO_COLUMNAS[1],0);//Bit de seleccion 2
-					digitalWrite(GPIO_COLUMNAS[2],0);//Bit de seleccion 3
-					digitalWrite(GPIO_COLUMNAS[3],1);
-					break;
-	}**/
 }
 /**
  * @brief			Funcion encargada de poner a nivel bajo una fila determinada
@@ -203,20 +150,31 @@ void apaga_fila(int fila){
  * Activa el flag FLAG_RAQUETA_DERECHA para que la maquina de estados ejecute la rutina adecuada
  */
 void int_pala_derecha(){
-	if (millis () < debounceTime)
-	{
-	debounceTime = millis () + DEBOUNCE_TIME ;
-	return;
+	if(flags & FLAG_RAQUETA_IZQUIERDA){
+		piLock (FLAGS_KEY);
+		flags &= ~FLAG_RAQUETA_IZQUIERDA;
+		flags &= ~FLAG_RAQUETA_DERECHA;
+		flags &= ~FLAG_TECLA;
+		flags |= FLAG_PAUSE;
+		piUnlock (FLAGS_KEY);
+		return;
 	}
+	if (millis () < debounceTime){
+		debounceTime = millis () + DEBOUNCE_TIME ;
+		return;
+	}
+#ifdef __MODO_DEBUG_TERMINAL__
+	printf("Interrupcion pala derecha.");
+	fflush(stdout);
+#endif
+
 	piLock (FLAGS_KEY);
 	flags |= FLAG_RAQUETA_DERECHA;
 	flags |= FLAG_TECLA;
 	piUnlock (FLAGS_KEY);
-	printf("Interrupcion pala derecha.");
-	fflush(stdout);
-	while (digitalRead (6) == HIGH) {//Pin 6 asociado a teclado matricial
-	delay (1) ;
-	}
+	/**while (digitalRead(GPIO_PALA_DERECHA) == HIGH) {
+		delay (1) ;
+	}*/
 	debounceTime = millis () + DEBOUNCE_TIME ;
 }
 /**
@@ -224,20 +182,31 @@ void int_pala_derecha(){
  * Activa el flag FLAG_RAQUETA_IZQUIERDA para que la maquina de estados ejecute la rutina adecuada
  */
 void int_pala_izquierda(){
-	if (millis () < debounceTime)
-		{
+	if(flags & FLAG_RAQUETA_DERECHA){
+		piLock (FLAGS_KEY);
+		flags &= ~FLAG_RAQUETA_IZQUIERDA;
+		flags &= ~FLAG_RAQUETA_DERECHA;
+		flags &= ~FLAG_TECLA;
+		flags |= FLAG_PAUSE;
+		piUnlock (FLAGS_KEY);
+		return;
+	}
+	if (millis () < debounceTime){
 		debounceTime = millis () + DEBOUNCE_TIME ;
 		return;
 	}
+#ifdef __MODO_DEBUG_TERMINAL__
+	printf("Interrupcion pala izquierda.");
+	fflush(stdout);
+#endif
+
 	piLock (FLAGS_KEY);
 	flags |= FLAG_RAQUETA_IZQUIERDA;
 	flags |= FLAG_TECLA;
 	piUnlock (FLAGS_KEY);
-	printf("Interrupcion pala izquierda.");
-	fflush(stdout);
-	while (digitalRead (5) == HIGH) {//Pin 5 asociado a teclado matricial
+	/**while (digitalRead(GPIO_PALA_IZQUIERDA) == HIGH) {
 		delay (1) ;
-	}
+	}*/
 	debounceTime = millis () + DEBOUNCE_TIME ;
 }
 //------------------------------------------------------
@@ -253,6 +222,19 @@ int comprueba_tecla_pulsada (fsm_t* this) {
 
 	piLock (FLAGS_KEY);
 	result = (flags & FLAG_TECLA);
+	piUnlock (FLAGS_KEY);
+
+	return result;
+}
+/**
+ * @brief			Comprueba el estado del flag FLAG_PAUSE
+ * @return			1 si el flag esta activo. 0 en caso contrario
+ *
+ */
+int comprueba_pause (fsm_t* this) {
+	int result;
+	piLock (FLAGS_KEY);
+	result = (flags & FLAG_PAUSE);
 	piUnlock (FLAGS_KEY);
 
 	return result;
@@ -313,20 +295,6 @@ int comprueba_final_juego (fsm_t* this) {
 
 	return result;
 }
-/**
- * @brief			Comprueba el estado del flag FLAG_JOYSTICK
- * @return			1 si el flag esta activo. 0 en caso contrario
- *
- */
-int comprueba_joystick (fsm_t* this) {
-	int result;
-
-	piLock (FLAGS_KEY);
-	result = (flags & FLAG_JOYSTICK);
-	piUnlock (FLAGS_KEY);
-
-	return result;
-}
 //------------------------------------------------------
 // FUNCIONES DE ACCION
 //------------------------------------------------------
@@ -339,14 +307,16 @@ void InicializaArkano (fsm_t* fsm) {
 	flags &= ~FLAG_TECLA;
 	flags &= ~FLAG_RAQUETA_IZQUIERDA;
 	piUnlock (FLAGS_KEY);
-
+#ifdef __MODO_DEBUG_TERMINAL__
 	piLock (STD_IO_BUFFER_KEY);
 	printf("\n-------ARKANO-------\nInstrucciones de juego:\nTecla izquierda [i]: mover pala a la izquierda\nTecla derecha [o]: mover pala a la derecha\n");
 	piUnlock (STD_IO_BUFFER_KEY);
-
+#endif
 	InicializaArkanoPi((tipo_arkanoPi *) &juego.arkanoPi);
 	juego.display = juego.arkanoPi.pantalla;
+#ifdef __MODO_DEBUG_TERMINAL__
 	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
+#endif
 	timer_pelota_start(500);
 	timer_raqueta_start(100);
 
@@ -360,14 +330,16 @@ void InicializaSnake (fsm_t* fsm) {
 	flags &= ~FLAG_TECLA;
 	flags &= ~FLAG_RAQUETA_DERECHA;
 	piUnlock (FLAGS_KEY);
-
+#ifdef __MODO_DEBUG_TERMINAL__
 	piLock (STD_IO_BUFFER_KEY);
 	printf("\n-------SNAKE-------\nInstrucciones de juego:\nTecla izquierda [i]: girar serpiente a la izquierda\nTecla derecha [o]: girar serpiente a la derecha\n");
 	piUnlock (STD_IO_BUFFER_KEY);
-
+#endif
 	InicializaSnakePi((tipo_snakePi *) &juego.snakePi);
 	juego.display = juego.snakePi.pantalla;
+#ifdef __MODO_DEBUG_TERMINAL__
 	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
+#endif
 	timer_serpiente_start(500);
 
 }
@@ -385,13 +357,16 @@ void MueveRaquetaIzquierda (fsm_t* fsm) {
 	if(x + (ancho-1) <= 0){
 		return;
 	}
-	piLock(JUEGO_KEY);
-	juego.arkanoPi.raqueta.x = juego.arkanoPi.raqueta.x - 1;
-	ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
-	juego.display = juego.arkanoPi.pantalla;
-	piUnlock(JUEGO_KEY);
+	if(juego.estado == PLAYING){
+		piLock(JUEGO_KEY);
+		juego.arkanoPi.raqueta.x = juego.arkanoPi.raqueta.x - 1;
+		ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
+		juego.display = juego.arkanoPi.pantalla;
+		piUnlock(JUEGO_KEY);
+	}
+#ifdef __MODO_DEBUG_TERMINAL__
 	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
-
+#endif
 }
 
 /**
@@ -403,17 +378,20 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
 	flags &= ~FLAG_TECLA;
 	flags &= ~FLAG_RAQUETA_DERECHA;
 	piUnlock (FLAGS_KEY);
-	// A completar por el alumno...
 		int x = juego.arkanoPi.raqueta.x;
 		if(x >= 9){
 			return;
 		}
-		piLock(JUEGO_KEY);
-		juego.arkanoPi.raqueta.x = juego.arkanoPi.raqueta.x + 1;
-		ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
-		juego.display = juego.arkanoPi.pantalla;
-		piUnlock(JUEGO_KEY);
+		if(juego.estado == PLAYING){
+			piLock(JUEGO_KEY);
+			juego.arkanoPi.raqueta.x = juego.arkanoPi.raqueta.x + 1;
+			ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
+			juego.display = juego.arkanoPi.pantalla;
+			piUnlock(JUEGO_KEY);
+		}
+#ifdef __MODO_DEBUG_TERMINAL__
 		PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
+#endif
 
 }
 /**
@@ -423,13 +401,17 @@ void MueveRaquetaDerecha (fsm_t* fsm) {
 void MueveRaqueta(int posicion){
 	int ancho=juego.arkanoPi.raqueta.ancho;
 	if(posicion + (ancho) <= 0 || posicion > MATRIZ_ANCHO-1){
-		printf("Posicion de raquera erronea");
+#ifdef __MODO_DEBUG_TERMINAL__
+		printf("Posicion de raqueta erronea");
+#endif
 		return;
 	}
 	juego.arkanoPi.raqueta.x = posicion;
 	ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
 	juego.display = juego.arkanoPi.pantalla;
+#ifdef __MODO_DEBUG_TERMINAL__
 	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
+#endif
 }
 
 /**
@@ -444,7 +426,7 @@ void MovimientoPelota (fsm_t* fsm) {
 	piLock (FLAGS_KEY);
 	flags &= ~FLAG_PELOTA;
 	piUnlock (FLAGS_KEY);
-	// A completar por el alumno...
+
 	int x = juego.arkanoPi.pelota.x;
 	int y = juego.arkanoPi.pelota.y;
 	int xv = juego.arkanoPi.pelota.xv;
@@ -463,14 +445,18 @@ void MovimientoPelota (fsm_t* fsm) {
 	if(sigX > MATRIZ_ANCHO -1 || sigX < 0){
 		sigXV = -xv;
 		sigX = x + sigXV;
+		SuenaRebote();
 
 	}
 	if(sigY < 0){
 		sigYV = -yv;
 		sigY = y + sigYV;
+		SuenaRebote();
 	}
 	if(sigY > MATRIZ_ALTO -1){
+#ifdef __MODO_DEBUG_TERMINAL__
 		printf("Game Over...\n");
+#endif
 		Derrota(fsm->current_state);
 		return;
 	}
@@ -480,12 +466,15 @@ void MovimientoPelota (fsm_t* fsm) {
 		juego.arkanoPi.ladrillos.matriz[sigX][sigY]=0;
 		int restantes = CalculaLadrillosRestantes((tipo_pantalla*) &juego.arkanoPi.ladrillos);
 		if(restantes <=15){
+#ifdef __MODO_DEBUG_TERMINAL__
 			printf("Has ganado! \n");
+#endif
 			Victoria(fsm->current_state);
 			return;
 		}
 		sigYV = -yv;
 		sigY = y + sigYV;
+		SuenaPunto();
 	}
 
 	//Rebote contra pala
@@ -508,6 +497,7 @@ void MovimientoPelota (fsm_t* fsm) {
 			sigYV = -yv;
 			sigY = y + sigYV;
 		}
+		SuenaRebote();
 	}
 
 	piLock(JUEGO_KEY);
@@ -519,7 +509,9 @@ void MovimientoPelota (fsm_t* fsm) {
 	ActualizaPantallaArkano((tipo_arkanoPi*)&juego.arkanoPi);
 	piUnlock(JUEGO_KEY);
 	juego.display = juego.arkanoPi.pantalla;
+#ifdef __MODO_DEBUG_TERMINAL__
 	PintaPantallaPorTerminal((tipo_pantalla*) &juego.display);
+#endif
 
 }
 /**
@@ -563,7 +555,9 @@ void AvanzaSerpiente(fsm_t* fsm){
 		int posx = juego.snakePi.serpiente.matriz[i].x;
 		int posy = juego.snakePi.serpiente.matriz[i].y;
 		if(sigX == posx && sigY == posy){
+#ifdef __MODO_DEBUG_TERMINAL__
 			printf("Game Over...\n");
+#endif
 			Derrota(fsm->current_state);
 			return;
 		}
@@ -572,9 +566,12 @@ void AvanzaSerpiente(fsm_t* fsm){
 	if(sigX == juego.snakePi.presa.posicion.x && sigY == juego.snakePi.presa.posicion.y){
 		juego.snakePi.serpiente.size += 1;
 		ReseteaPresaAleatorio((tipo_presa*)(&(juego.snakePi.presa)));
+		SuenaPunto();
 		//Compruebo si se ha alcanzado el tamaño de victoria
-		if(juego.snakePi.serpiente.size >= LONG_MAX){
+		if(juego.snakePi.serpiente.size >= 15){
+#ifdef __MODO_DEBUG_TERMINAL__
 			printf("Has ganado! \n");
+#endif
 			Victoria(fsm->current_state);
 			return;
 		}
@@ -590,7 +587,9 @@ void AvanzaSerpiente(fsm_t* fsm){
 
 	ActualizaPantallaSnake((tipo_snakePi*)&juego.snakePi);
 	juego.display = juego.snakePi.pantalla;
+#ifdef __MODO_DEBUG_TERMINAL__
 	PintaPantallaPorTerminal((tipo_pantalla*)(&(juego.snakePi.pantalla)));
+#endif
 
 
 }
@@ -624,9 +623,10 @@ void GiraSerpienteDerecha(fsm_t* fsm){
 		VX = 0;
 		VY = 1;
 	}
-	juego.snakePi.serpiente.vx = VX;
-	juego.snakePi.serpiente.vy = VY;
-	printf("Nuevo movimiento en x:%d, en y:%d\n",juego.snakePi.serpiente.vx,juego.snakePi.serpiente.vy);
+	if(juego.estado == PLAYING){
+		juego.snakePi.serpiente.vx = VX;
+		juego.snakePi.serpiente.vy = VY;
+	}
 }
 
 /**
@@ -658,9 +658,10 @@ void GiraSerpienteIzquierda(fsm_t* fsm){
 		VX = 0;
 		VY = -1;
 	}
-	juego.snakePi.serpiente.vx = VX;
-	juego.snakePi.serpiente.vy = VY;
-	printf("Nuevo movimiento en x:%d, en y:%d\n",juego.snakePi.serpiente.vx,juego.snakePi.serpiente.vy);
+	if(juego.estado == PLAYING){
+		juego.snakePi.serpiente.vx = VX;
+		juego.snakePi.serpiente.vy = VY;
+	}
 }
 /**
  * @brief	Funcion para terminar el juego y generar mensaje de victoria.
@@ -679,6 +680,7 @@ void Victoria(tipo_estados_juego estado){
 	flags |= FLAG_FINAL_JUEGO;
 	piUnlock (FLAGS_KEY);
 	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_victoria);
+	SuenaVictoria();
 }
 /**
  * @brief	Funcion para terminar el juego y generar mensaje de victoria.
@@ -697,6 +699,106 @@ void Derrota(tipo_estados_juego estado){
 	flags |= FLAG_FINAL_JUEGO;
 	piUnlock (FLAGS_KEY);
 	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_gameover);
+	SuenaDerrota();
+}
+/**
+ * @brief			Si el estado del juego es PLAYING, para el movimiento deteniendo los temporizadores adecuados segun el estado del sistema
+ * 					Si el juego esta PAUSED, reinicia el los temporizadores del juego adecuado
+ */
+void PausaJuego(fsm_t* fsm){
+
+	piLock (FLAGS_KEY);
+	flags &= ~FLAG_PAUSE;
+	piUnlock (FLAGS_KEY);
+#ifdef __MODO_DEBUG_TERMINAL__
+		printf("FLAG_PAUSE activo\n");
+#endif
+	if(juego.estado == PLAYING){
+#ifdef __MODO_DEBUG_TERMINAL__
+		printf("Pausing...\n");
+#endif
+		juego.estado = PAUSED;
+		if(fsm->current_state == WAIT_PUSH_ARKANO){
+			timer_delete(timerPelota);
+			timer_delete(timerRaqueta);
+		}
+		if(fsm->current_state == WAIT_PUSH_SNAKE){
+			timer_delete(timerSerpiente);
+		}
+		return;
+	}
+	if(juego.estado == PAUSED){
+#ifdef __MODO_DEBUG_TERMINAL__
+		printf("Resuming...\n");
+#endif
+		juego.estado = PLAYING;
+		if(fsm->current_state == WAIT_PUSH_ARKANO){
+			timer_pelota_start(500);
+			timer_raqueta_start(100);
+		}
+		if(fsm->current_state == WAIT_PUSH_SNAKE){
+			timer_serpiente_start(500);
+		}
+		return;
+	}
+
+}
+/**
+ * @brief			Reproduce el sonido asociado al fin de la partida por victoria
+ */
+void SuenaVictoria(){
+	/**softToneWrite(GPIO_BUZZER, 3136);
+	usleep(800000);
+	softToneWrite(GPIO_BUZZER, 0);*/
+	digitalWrite(GPIO_BUZZER, HIGH);
+	usleep(200000);
+	digitalWrite(GPIO_BUZZER, LOW);
+	usleep(100000);
+	digitalWrite(GPIO_BUZZER, HIGH);
+	usleep(200000);
+	digitalWrite(GPIO_BUZZER, LOW);
+	usleep(100000);
+	digitalWrite(GPIO_BUZZER, HIGH);
+	usleep(200000);
+	digitalWrite(GPIO_BUZZER, LOW);
+}
+/**
+ * @brief			Reproduce el sonido asociado al fin de la partida por derrota
+ */
+void SuenaDerrota(){
+	/**softToneWrite(GPIO_BUZZER, 659);
+	usleep(800000);
+	softToneWrite(GPIO_BUZZER, 0);*/
+	digitalWrite(GPIO_BUZZER, HIGH);
+	usleep(800000);
+	digitalWrite(GPIO_BUZZER, LOW);
+}
+/**
+ * @brief			Reproduce el sonido asociado al rebote de la pelota con la pared o la raqueta en ARKANO
+ */
+void SuenaRebote(){
+	/**softToneWrite(GPIO_BUZZER, 880);
+	usleep(200000);
+	softToneWrite(GPIO_BUZZER,0);*/
+	digitalWrite(GPIO_BUZZER, HIGH);
+	usleep(100000);
+	digitalWrite(GPIO_BUZZER, LOW);
+
+}
+/**
+ * @brief			Reproduce el sonido asociado a la eliminacion de ladrillo en ARKANO y a comida en SNAKE
+ */
+void SuenaPunto(){
+	/**softToneWrite(GPIO_BUZZER, 1046);
+	usleep(100000);
+	softToneWrite(GPIO_BUZZER, 0);
+	usleep(10000);
+	softToneWrite(GPIO_BUZZER, 1975);
+	usleep(100000);
+	softToneWrite(GPIO_BUZZER, 0);*/
+	digitalWrite(GPIO_BUZZER, HIGH);
+	usleep(200000);
+	digitalWrite(GPIO_BUZZER, LOW);
 }
 /**
  * @brief			Lleva el juego al estado final. Pinta por pantalla mensaje de fin de juego
@@ -705,7 +807,9 @@ void FinalJuego (fsm_t* fsm) {
 	piLock (FLAGS_KEY);
 	flags &= ~FLAG_FINAL_JUEGO;
 	piUnlock (FLAGS_KEY);
+#ifdef __MODO_DEBUG_TERMINAL__
 	printf("-------Fin del juego--------\nPulsa una tecla para volver a empezar\n");
+#endif
 
 
 }
@@ -717,8 +821,9 @@ void ReseteaJuego (fsm_t* fsm) {
 	piLock (FLAGS_KEY);
 	flags = 0;
 	piUnlock (FLAGS_KEY);
-
+#ifdef __MODO_DEBUG_TERMINAL__
 	printf("\nA la espera de recomenzar...\nPulsa 'i' para inicial Arkano\nPulsa 'o' para iniciar Snake\n Pulsa 'q' para salir\n");
+#endif
 	piLock (JUEGO_KEY);
 	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_inicial);
 	piUnlock (JUEGO_KEY);
@@ -757,8 +862,8 @@ int systemSetup (void) {
 		pullUpDnControl(GPIO_PALA_DERECHA,PUD_DOWN);
 		pullUpDnControl(GPIO_PALA_IZQUIERDA,PUD_DOWN);
 
-		wiringPiISR(GPIO_PALA_DERECHA,INT_EDGE_RISING,&int_pala_derecha);
-		wiringPiISR(GPIO_PALA_IZQUIERDA,INT_EDGE_RISING,&int_pala_izquierda);
+		wiringPiISR(GPIO_PALA_DERECHA,INT_EDGE_FALLING,&int_pala_derecha);
+		wiringPiISR(GPIO_PALA_IZQUIERDA,INT_EDGE_FALLING,&int_pala_izquierda);
 
 		//Configuracion para uso de teclado matricial como entrada
 		//Pines asociados a teclado matricial
@@ -787,12 +892,17 @@ int systemSetup (void) {
 		pinMode(GPIO_COL_3,OUTPUT);
 		pinMode(GPIO_COL_4,OUTPUT);
 
+		//Inicializacion pin buzzer
+		pinMode(GPIO_BUZZER, OUTPUT);
+		//softToneCreate(GPIO_BUZZER);
+
 		//Inicializacion temporizador refresco pantalla
 		timer_display_start(1);
 
 		// Lanzamos thread para exploracion del teclado convencional del PC
+#ifdef __MODO_DEBUG_TERMINAL__
 		x = piThreadCreate (thread_explora_teclado);
-
+#endif
 		if (x != 0) {
 			printf ("it didn't start!!!\n");
 			piUnlock (STD_IO_BUFFER_KEY);
@@ -856,7 +966,7 @@ static int timer_display_start(int ms){
 	spec.it_interval.tv_sec = ms / 1000;
 	spec.it_interval.tv_nsec = (ms % 1000) * 1000000;
 
-	result = timer_create (CLOCK_REALTIME, &se, &timerDisplay); /* o CLOCK_MONOTONIC si se soporta */
+	result = timer_create (CLOCK_REALTIME, &se, &timerDisplay);
 	printf("result after create = %d\n", result);
 	fflush(stdout);
 	result = timer_settime (timerDisplay, 0, &spec, NULL);
@@ -895,7 +1005,7 @@ static int timer_pelota_start(int ms){
 	spec.it_interval.tv_sec = ms / 1000;
 	spec.it_interval.tv_nsec = (ms % 1000) * 1000000;
 
-	result = timer_create (CLOCK_REALTIME, &se, &timerPelota); /* o CLOCK_MONOTONIC si se soporta */
+	result = timer_create (CLOCK_REALTIME, &se, &timerPelota);
 	printf("result after create = %d\n", result);
 	fflush(stdout);
 	result = timer_settime (timerPelota, 0, &spec, NULL);
@@ -939,7 +1049,7 @@ static int timer_raqueta_start(int ms){
 	spec.it_interval.tv_sec = ms / 1000;
 	spec.it_interval.tv_nsec = (ms % 1000) * 1000000;
 
-	result = timer_create (CLOCK_REALTIME, &se, &timerRaqueta); /* o CLOCK_MONOTONIC si se soporta */
+	result = timer_create (CLOCK_REALTIME, &se, &timerRaqueta);
 	printf("result after create = %d\n", result);
 	fflush(stdout);
 	result = timer_settime (timerRaqueta, 0, &spec, NULL);
@@ -1073,9 +1183,11 @@ int main ()
 			{ WAIT_PUSH_ARKANO,   comprueba_tecla_pelota,  WAIT_PUSH_ARKANO, MovimientoPelota },
 			{ WAIT_PUSH_ARKANO,   comprueba_tecla_izquierda,  WAIT_PUSH_ARKANO, MueveRaquetaIzquierda },
 			{ WAIT_PUSH_ARKANO,   comprueba_tecla_derecha,  WAIT_PUSH_ARKANO, MueveRaquetaDerecha },
+			{ WAIT_PUSH_ARKANO,   comprueba_pause,  WAIT_PUSH_ARKANO, PausaJuego },
 			{ WAIT_PUSH_SNAKE,    comprueba_tecla_pelota,  WAIT_PUSH_SNAKE,  AvanzaSerpiente},
 			{ WAIT_PUSH_SNAKE,    comprueba_tecla_izquierda,  WAIT_PUSH_SNAKE,  GiraSerpienteIzquierda},
 			{ WAIT_PUSH_SNAKE,    comprueba_tecla_derecha,  WAIT_PUSH_SNAKE,  GiraSerpienteDerecha},
+			{ WAIT_PUSH_SNAKE,    comprueba_pause,  WAIT_PUSH_SNAKE,  PausaJuego},
 			{ WAIT_PUSH_ARKANO,   comprueba_final_juego,  WAIT_END, FinalJuego },
 			{ WAIT_PUSH_SNAKE,   comprueba_final_juego,  WAIT_END, FinalJuego },
 			{ -1, NULL, -1, NULL },
@@ -1085,11 +1197,19 @@ int main ()
 
 	//Setup general del sistema
 	systemSetup();
+
 	//Setup maquina de estados
 	fsm_setup(fsm_arkanopi);
+
+	//Establecemos estado inicial del juego
+	juego.estado = PLAYING;
+
+#ifdef __MODO_DEBUG_TERMINAL__
 	piLock (STD_IO_BUFFER_KEY);
 	printf("\n---------ArkanoPi---------\nPulsa 'i' para inicial Arkano\nPulsa 'o' para iniciar Snake\n Pulsa 'q' para salir\n");
 	piUnlock (STD_IO_BUFFER_KEY);
+#endif
+
 	//Pinta pantalla inicial
 	piLock (JUEGO_KEY);
 	PintaMensajeInicialPantalla((tipo_pantalla*) &juego.display,&pantalla_inicial);

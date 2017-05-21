@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
+#include <softTone.h>
 
 #include "kbhit.h" // para poder detectar teclas pulsadas sin bloqueo y leer las teclas pulsadas
 #include "fsm.h"
@@ -23,6 +24,8 @@ typedef enum {
 	WAIT_START,
 	WAIT_PUSH_ARKANO,
 	WAIT_PUSH_SNAKE,
+	PAUSED,
+	PLAYING,
 	WAIT_END} tipo_estados_juego;
 
 typedef struct {
@@ -44,7 +47,7 @@ typedef struct {
 #define FLAG_RAQUETA_IZQUIERDA   0x04
 #define FLAG_PELOTA              0x08
 #define FLAG_FINAL_JUEGO         0x10
-#define FLAG_JOYSTICK            0x20
+#define FLAG_PAUSE               0x20
 
 // A 'key' which we can lock and unlock - values are 0 through 3
 //	This is interpreted internally as a pthread_mutex by wiringPi
@@ -79,6 +82,7 @@ float lectura_ADC(void);
 // FUNCIONES DE ENTRADA O DE TRANSICION DE LA MAQUINA DE ESTADOS
 //------------------------------------------------------
 int comprueba_tecla_pulsada (fsm_t* this);
+int comprueba_pause (fsm_t* this);
 int comprueba_tecla_pelota (fsm_t* this);
 int comprueba_tecla_raqueta_derecha (fsm_t* this);
 int comprueba_tecla_raqueta_izquierda (fsm_t* this);
@@ -108,12 +112,20 @@ void GiraSerpienteIzquierda(fsm_t* fsm);
 //------------------------------------------------------
 int systemSetup (void);
 //------------------------------------------------------
-// FUNCIONES QUE MANEJAN VICTORIA Y DERROTA
+// FUNCIONES QUE MANEJAN VICTORIA, DERROTA Y PAUSA
 //------------------------------------------------------
 void Victoria(tipo_estados_juego estado);
 void Derrota(tipo_estados_juego estado);
+void PausaJuego(fsm_t* fsm);
 
 int areaPala(tipo_raqueta *p_pala);
+//------------------------------------------------------
+// FUNCIONES QUE REPRODUCEN SONIDOS USANDO softTone.h
+//------------------------------------------------------
+void SuenaVictoria();
+void SuenaDerrota();
+void SuenaRebote();
+void SuenaPunto();
 //------------------------------------------------------
 // SUBRUTINAS DE ATENCION A LAS INTERRUPCIONES
 //------------------------------------------------------

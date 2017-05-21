@@ -69,12 +69,13 @@ void ActualizaPantallaSnake(tipo_snakePi* p_snakePi){
 
 		PintaSerpiente( &(p_snakePi->serpiente),&(p_snakePi->pantalla));
 		PintaPresa(&(p_snakePi->presa), &(p_snakePi->pantalla));
-
+#ifdef __MODO_DEBUG_TERMINAL__
 		int i;
 		printf("Movimiento en x: %d, en y: %d\n",p_snakePi->serpiente.vx,p_snakePi->serpiente.vy);
 		for(i=0;i<LONG_MAX;i++){
 			printf("Parte %d -> x:%d y:%d\n",i,p_snakePi->serpiente.matriz[i].x,p_snakePi->serpiente.matriz[i].y);
 		}
+#endif
 }
 
 void InicializaSnakePi(tipo_snakePi *p_snakePi) {
